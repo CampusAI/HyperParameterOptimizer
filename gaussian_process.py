@@ -61,7 +61,7 @@ class GaussianProcessSearch:
         kernel = ConstantKernel(1.0) * Matern(length_scale=length_scale, nu=nu)
         return GaussianProcessRegressor(kernel=kernel, alpha=noise**2)
 
-    def get_maximum(self, n_calls=10, n_random_starts=10, acq_optimizer='lbfgs', verbose=True):
+    def get_maximum(self, n_calls=10, n_random_starts=5, noise=0.01, verbose=True):
         """Performs Bayesian optimization by iteratively evaluating the given function on points
         that are likely to be a global maximum.
 
@@ -88,10 +88,10 @@ class GaussianProcessSearch:
                           n_calls=n_calls,
                           n_random_starts=n_random_starts,
                           acq_func='EI',
-                          acq_optimizer=acq_optimizer,
+                          acq_optimizer='lbfgs',
                           x0=x_values,
                           y0=y_values,
-                          noise=1e-10,
+                          noise=noise,
                           n_jobs=-1,
                           verbose=verbose)
         ax = plot_objective(res)
@@ -105,7 +105,7 @@ class GaussianProcessSearch:
             self.y_values.append(float(-res.func_vals[i]))
         if self.data_file is not None:
             self._save_values()
-        return res.x, res.fun
+        return res.x, -res.fun
 
     def init_session(self):
         """Save in session variables. the parameters that will be passed to the evaluation function
