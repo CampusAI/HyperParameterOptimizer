@@ -130,7 +130,7 @@ class GaussianProcessSearch:
 
         """
         data_dict = {'x_values': self.x_values, 'y_values': self.y_values}
-        with open(self.data_file, 'w+b') as json_file:
+        with open(self.data_file, 'w') as json_file:
             json.dump(data_dict, json_file)
 
     @staticmethod
