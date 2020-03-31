@@ -61,7 +61,8 @@ class GaussianProcessSearch:
         kernel = ConstantKernel(1.0) * Matern(length_scale=length_scale, nu=nu)
         return GaussianProcessRegressor(kernel=kernel, alpha=noise**2)
 
-    def get_maximum(self, n_calls=10, n_random_starts=5, noise=0.01, verbose=True):
+    def get_maximum(self, n_calls=10, n_random_starts=5, noise=0.01, verbose=True,
+                    plot_results=False):
         """Performs Bayesian optimization by iteratively evaluating the given function on points
         that are likely to be a global maximum.
 
@@ -71,8 +72,9 @@ class GaussianProcessSearch:
         Args:
             n_calls (int): Number of iterations
             n_random_starts (int): Initial random evaluations if no previpus values are provided
-            acq_optimizer (str): Acquisition function. See https://scikit-optimize.github.io/stable/modules/generated/skopt.gp_minimize.html#skopt.gp_minimize
+            noise (float): Estimated noise in the data
             verbose (bool): Whether to print optimization details at each evaluation
+            plot_results (bool): Whether to plot an analysis of the solution
 
         Returns:
             A tuple (x, y) with the argmax and max found of the evaluated function.
@@ -82,11 +84,12 @@ class GaussianProcessSearch:
         # Negate y_values because skopt performs minimization instead of maximization
         y_values = [-y for y in self.y_values] if len(self.y_values) > 0 else None
         print(y_values)
+        rand_starts = 2 if len(self.x_values) == 0 and n_random_starts == 0 else n_random_starts
         res = gp_minimize(func=GaussianProcessSearch.evaluate,
                           dimensions=self.search_space,
                         #   base_estimator=self.gp_regressor,
                           n_calls=n_calls,
-                          n_random_starts=n_random_starts,
+                          n_random_starts=rand_starts,
                           acq_func='EI',
                           acq_optimizer='lbfgs',
                           x0=x_values,
@@ -94,10 +97,11 @@ class GaussianProcessSearch:
                           noise=noise,
                           n_jobs=-1,
                           verbose=verbose)
-        ax = plot_objective(res)
-        plt.show()
-        ax = plot_evaluations(res)
-        plt.show()
+        if plot_results:
+            ax = plot_objective(res)
+            plt.show()
+            ax = plot_evaluations(res)
+            plt.show()
 
         for i in range(n_calls):
             self.x_values.append([float(x) for x in res.x_iters[i]])
