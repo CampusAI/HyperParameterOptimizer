@@ -1,7 +1,7 @@
 from skopt import gp_minimize
 from skopt.learning import GaussianProcessRegressor
 from skopt.learning.gaussian_process.kernels import ConstantKernel, Matern
-from skopt.plots import plot_objective
+from skopt.plots import plot_objective, plot_evaluations
 import matplotlib.pyplot as plt
 import json
 
@@ -44,7 +44,7 @@ class GaussianProcessSearch:
         self.gp_regressor = self._get_gp_regressor()
 
     @staticmethod
-    def _get_gp_regressor(length_scale=1., nu=2.5, noise=1.):
+    def _get_gp_regressor(length_scale=1., nu=2.5, noise=0.1):
         """Creates the GaussianProcessRegressor model
 
         Args:
@@ -81,18 +81,24 @@ class GaussianProcessSearch:
         x_values = [x for x in self.x_values] if len(self.x_values) > 0 else None
         # Negate y_values because skopt performs minimization instead of maximization
         y_values = [-y for y in self.y_values] if len(self.y_values) > 0 else None
+        print(y_values)
         res = gp_minimize(func=GaussianProcessSearch.evaluate,
                           dimensions=self.search_space,
-                          base_estimator=self.gp_regressor,
+                        #   base_estimator=self.gp_regressor,
                           n_calls=n_calls,
                           n_random_starts=n_random_starts,
                           acq_func='EI',
                           acq_optimizer=acq_optimizer,
                           x0=x_values,
                           y0=y_values,
+                          noise=1e-10,
+                          n_jobs=-1,
                           verbose=verbose)
         ax = plot_objective(res)
         plt.show()
+        ax = plot_evaluations(res)
+        plt.show()
+
         for i in range(n_calls):
             self.x_values.append([float(x) for x in res.x_iters[i]])
             # Appending negated value to return the correct sign
