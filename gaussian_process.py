@@ -1,6 +1,8 @@
 from skopt import gp_minimize
 from skopt.learning import GaussianProcessRegressor
 from skopt.learning.gaussian_process.kernels import ConstantKernel, Matern
+from skopt.plots import plot_objective
+import matplotlib.pyplot as plt
 import json
 
 # Session variables
@@ -31,6 +33,7 @@ class GaussianProcessSearch:
         self.y_values = []
         if data_file is not None:
             try:
+                print("Loading data...")
                 data_dict = self._load_values()
                 self.x_values = data_dict['x_values']
                 self.y_values = data_dict['y_values']
@@ -88,6 +91,8 @@ class GaussianProcessSearch:
                           x0=x_values,
                           y0=y_values,
                           verbose=verbose)
+        ax = plot_objective(res)
+        plt.show()
         for i in range(n_calls):
             self.x_values.append([float(x) for x in res.x_iters[i]])
             # Appending negated value to return the correct sign
