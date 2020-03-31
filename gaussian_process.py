@@ -1,6 +1,8 @@
 from skopt import gp_minimize
 from skopt.learning import GaussianProcessRegressor
 from skopt.learning.gaussian_process.kernels import ConstantKernel, Matern
+from skopt.plots import plot_objective, plot_evaluations
+import matplotlib.pyplot as plt
 import json
 
 # Session variables
@@ -31,6 +33,7 @@ class GaussianProcessSearch:
         self.y_values = []
         if data_file is not None:
             try:
+                print("Loading data...")
                 data_dict = self._load_values()
                 self.x_values = data_dict['x_values']
                 self.y_values = data_dict['y_values']
@@ -41,7 +44,7 @@ class GaussianProcessSearch:
         self.gp_regressor = self._get_gp_regressor()
 
     @staticmethod
-    def _get_gp_regressor(length_scale=1., nu=2.5, noise=1.):
+    def _get_gp_regressor(length_scale=1., nu=2.5, noise=0.1):
         """Creates the GaussianProcessRegressor model
 
         Args:
@@ -58,7 +61,7 @@ class GaussianProcessSearch:
         kernel = ConstantKernel(1.0) * Matern(length_scale=length_scale, nu=nu)
         return GaussianProcessRegressor(kernel=kernel, alpha=noise**2)
 
-    def get_maximum(self, n_calls=10, n_random_starts=10, acq_optimizer='lbfgs', verbose=True):
+    def get_maximum(self, n_calls=10, n_random_starts=5, noise=0.01, verbose=True):
         """Performs Bayesian optimization by iteratively evaluating the given function on points
         that are likely to be a global maximum.
 
@@ -78,23 +81,31 @@ class GaussianProcessSearch:
         x_values = [x for x in self.x_values] if len(self.x_values) > 0 else None
         # Negate y_values because skopt performs minimization instead of maximization
         y_values = [-y for y in self.y_values] if len(self.y_values) > 0 else None
+        print(y_values)
         res = gp_minimize(func=GaussianProcessSearch.evaluate,
                           dimensions=self.search_space,
-                          base_estimator=self.gp_regressor,
+                        #   base_estimator=self.gp_regressor,
                           n_calls=n_calls,
                           n_random_starts=n_random_starts,
                           acq_func='EI',
-                          acq_optimizer=acq_optimizer,
+                          acq_optimizer='lbfgs',
                           x0=x_values,
                           y0=y_values,
+                          noise=noise,
+                          n_jobs=-1,
                           verbose=verbose)
+        ax = plot_objective(res)
+        plt.show()
+        ax = plot_evaluations(res)
+        plt.show()
+
         for i in range(n_calls):
             self.x_values.append([float(x) for x in res.x_iters[i]])
             # Appending negated value to return the correct sign
             self.y_values.append(float(-res.func_vals[i]))
         if self.data_file is not None:
             self._save_values()
-        return res.x, res.fun
+        return res.x, -res.fun
 
     def init_session(self):
         """Save in session variables. the parameters that will be passed to the evaluation function
