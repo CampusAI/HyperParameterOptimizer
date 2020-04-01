@@ -4,6 +4,8 @@ from skopt.learning.gaussian_process.kernels import ConstantKernel, Matern
 from skopt.plots import plot_objective, plot_evaluations
 import matplotlib.pyplot as plt
 import json
+import os
+import load_save
 
 # Session variables
 session_params = {}
@@ -11,7 +13,7 @@ session_params = {}
 
 class GaussianProcessSearch:
 
-    def __init__(self, search_space, fixed_space, evaluator, data_file=None):
+    def __init__(self, search_space, fixed_space, evaluator, input_file=None, output_file=None):
         """Instantiate the GaussianProcessSearch and create the GaussianProcessRegressor
 
         Args:
@@ -22,25 +24,23 @@ class GaussianProcessSearch:
                 evaluator function. The keys must match the correspondent names in the function.
             evaluator (function): Function of which we want to estimate the maximum. It must take
                 the union of search_space and fixed_space as parameters and return a scalar value.
-            data_file (str): Path to the file containing points in the search space and
-                corresponding values that are already known. New
+            input_file (str): Path to the file containing points in the search space and
+                corresponding values that are already known.
+            output_file (str): Path to the file where updated results will be stored.
         """
         self.search_space = search_space
         self.fixed_space = fixed_space
         self.evaluator = evaluator
-        self.data_file = data_file
+        self.input_file = input_file
+        self.output_file = output_file
         self.x_values = []
         self.y_values = []
-        if data_file is not None:
+        if input_file is not None:
             try:
-                print("Loading data...")
-                data_dict = self._load_values()
-                self.x_values = data_dict['x_values']
-                self.y_values = data_dict['y_values']
+                data_dict = load_save.load(data_file=input_file)
+                self.x_values, self.y_values = self._extract_values(data_dict)
             except OSError as e:
-                # We can continue but we warn the user
-                print('Cannot read input data from ' + str(data_file))
-                print(e)
+                raise OSError('Cannot read input file. \n' + str(e))
 
     @staticmethod
     def _get_gp_regressor(length_scale=1., nu=2.5, noise=0.1):
@@ -58,7 +58,7 @@ class GaussianProcessSearch:
 
         """
         kernel = ConstantKernel(1.0) * Matern(length_scale=length_scale, nu=nu)
-        return GaussianProcessRegressor(kernel=kernel, alpha=noise**2)
+        return GaussianProcessRegressor(kernel=kernel, alpha=noise ** 2)
 
     def get_maximum(self, n_calls=10, n_random_starts=5, noise=0.01, verbose=True,
                     plot_results=False):
@@ -82,7 +82,6 @@ class GaussianProcessSearch:
         x_values = [x for x in self.x_values] if len(self.x_values) > 0 else None
         # Negate y_values because skopt performs minimization instead of maximization
         y_values = [-y for y in self.y_values] if len(self.y_values) > 0 else None
-        print(y_values)
         rand_starts = 2 if len(self.x_values) == 0 and n_random_starts == 0 else n_random_starts
         res = gp_minimize(func=GaussianProcessSearch.evaluate,
                           dimensions=self.search_space,
@@ -100,12 +99,9 @@ class GaussianProcessSearch:
             plt.show()
             ax = plot_evaluations(res)
             plt.show()
-
-        for i in range(n_calls):
-            self.x_values.append([float(x) for x in res.x_iters[i]])
-            # Appending negated value to return the correct sign
-            self.y_values.append(float(-res.func_vals[i]))
-        if self.data_file is not None:
+        self.x_values = [[float(val) for val in point] for point in res.x_iters]
+        self.y_values = [-val for val in res.func_vals]
+        if self.output_file is not None:
             self._save_values()
         return res.x, -res.fun
 
@@ -126,25 +122,56 @@ class GaussianProcessSearch:
         global session_params
         session_params = {}
 
-    def _load_values(self):
-        """Load the data file
+    def _extract_values(self, data_dict):
+        """Extracts the x values and target values from the given data dictionary.
 
-        Returns:
-            A dictionary {'x_values': x_values, 'y_values': y_values} where
-                x_values (list) List of the already evaluated points
-                y_values (list) The correspondent values
+         Args:
+             data_dict (dict): A dictionaty like: {<param_name>: [list of values]} where all lists
+                 have the same length and values at same index belong to the same point. The only
+                 exception is data_dict['value'] that must contain a list of float correspondent
+                 to the function evaluations in the points.
+
+         Returns:
+             A tuple (x_values, y_values) where
+                 x_values (list): List of points in the search space
+                 y_values (list): List of known values for the x_values points
 
         """
-        with open(self.data_file, 'r') as json_file:
-            return json.load(json_file)
+        y_values = data_dict['value']
+        x_values = []
+        for i, dimension in enumerate(self.search_space):
+            name = dimension.name
+            try:
+                for j, v in enumerate(data_dict[name]):
+                    if i == 0:  # If first dimension, instantiate an array for data point
+                        x_values.append([])
+                    x_values[j].append(data_dict[name][j])
+            except KeyError:
+                raise KeyError('Search space expects a ' + name + ' dimension but loaded data '
+                                                                  'does not contain it')
+        return x_values, y_values
+
+    def _pack_values(self):
+        """Packs the known values to a dictionary where keys are dimension names
+
+        Returns: A dictionary {dimension_name: [dimension_values] for all dimensions,
+            value: [result_values]}
+
+        """
+        res_dict = {}
+        for i, dimension in enumerate(self.search_space):
+            res_dict[dimension.name] = []
+            for point in self.x_values:
+                res_dict[dimension.name].append(point[i])
+        res_dict['value'] = self.y_values
+        return res_dict
 
     def _save_values(self):
         """Save in the data file the known x_values and y_values
 
         """
-        data_dict = {'x_values': self.x_values, 'y_values': self.y_values}
-        with open(self.data_file, 'w') as json_file:
-            json.dump(data_dict, json_file)
+        data_dict = self._pack_values()
+        load_save.save(self.output_file, data_dict)
 
     @staticmethod
     def _to_key_value(values):
@@ -177,6 +204,7 @@ class GaussianProcessSearch:
         global session_params
         evaluator_func = session_params['evaluator']
         fixed_space = session_params['fixed_space']
+        # Transform the point in a mapping param_name=value
         name_value_dict = GaussianProcessSearch._to_key_value(point)
         args = {**fixed_space, **name_value_dict}
         return -evaluator_func(**args)
