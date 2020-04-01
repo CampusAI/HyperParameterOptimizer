@@ -41,7 +41,6 @@ class GaussianProcessSearch:
                 # We can continue but we warn the user
                 print('Cannot read input data from ' + str(data_file))
                 print(e)
-        self.gp_regressor = self._get_gp_regressor()
 
     @staticmethod
     def _get_gp_regressor(length_scale=1., nu=2.5, noise=0.1):
@@ -87,7 +86,6 @@ class GaussianProcessSearch:
         rand_starts = 2 if len(self.x_values) == 0 and n_random_starts == 0 else n_random_starts
         res = gp_minimize(func=GaussianProcessSearch.evaluate,
                           dimensions=self.search_space,
-                        #   base_estimator=self.gp_regressor,
                           n_calls=n_calls,
                           n_random_starts=rand_starts,
                           acq_func='EI',
