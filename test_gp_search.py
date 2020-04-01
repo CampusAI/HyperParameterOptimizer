@@ -27,10 +27,13 @@ def func(lr, batch_size, alpha, some_param, noise_level):
 gp_search = GaussianProcessSearch(search_space=search_space,
                                   fixed_space=fixed_space,
                                   evaluator=func,
-                                  input_file='test.csv',  # Use None to start from zero
+                                  input_file=None,  # Use None to start from zero
                                   output_file='test.csv')
 gp_search.init_session()
 x, y = gp_search.get_maximum(n_calls=10, n_random_starts=0,
                              noise=fixed_space['noise_level'],
                              verbose=True,
                              )
+
+x = gp_search.get_next_candidate(noise=0.01)
+print('NEXT CANDIDATE: ' + str(x))
