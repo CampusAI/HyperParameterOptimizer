@@ -1,5 +1,6 @@
 from skopt import gp_minimize
 from skopt.learning import GaussianProcessRegressor
+from skopt import Optimizer
 from skopt.learning.gaussian_process.kernels import ConstantKernel, Matern
 from skopt.plots import plot_objective, plot_evaluations
 import matplotlib.pyplot as plt
@@ -104,41 +105,26 @@ class GaussianProcessSearch:
             self._save_values()
         return res.x, -res.fun
 
-    def get_next_candidate(self, noise=0.01):
-        """Returns the next candidate for the skopt acquisition function
+    def get_next_candidate(self, n_points):
+        """Returns the next candidates for the skopt acquisition function
 
         Args:
-            noise (float): Estimated noise in the outputs
+            n_points (int): Number of candidates desired
 
         Returns:
-            The point that would be chosen by gp_minimize as next candidate
+            List of points that would be chosen by gp_minimize as next candidate
 
         """
         # Negate y_values because skopt performs minimization instead of maximization
         y_values = [-y for y in self.y_values]
-        assert len(self.y_values) > 0, 'Error: no values are known at the moment'
-        res = gp_minimize(func=GaussianProcessSearch._next_candidate_callback,
-                          dimensions=self.search_space,
-                          n_calls=1,
-                          n_random_starts=0,
-                          acq_func='EI',
-                          acq_optimizer='lbfgs',
-                          x0=self.x_values,
-                          y0=y_values,
-                          noise=noise,
-                          verbose=False)
-        return session_params['next_candidate']  # Point correspondent to maximum, which is
-
-    @staticmethod
-    def _next_candidate_callback(point):
-        """The only purpose of this function is to be called by get_next_candidate() to see which
-        point will be chosen by the acquisition function.
-
-        Sets the chosen point in session_params['next_candidate']
-
-        """
-        session_params['next_candidate'] = point
-        return 0
+        optimizer = Optimizer(
+            dimensions=self.search_space,
+            base_estimator='gp',
+            n_initial_points=len(self.x_values),
+            acq_func='EI'
+        )
+        optimizer.tell(self.x_values, y_values)
+        return optimizer.ask(n_points=n_points)
 
     def init_session(self):
         """Save in session variables. the parameters that will be passed to the evaluation function

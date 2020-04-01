@@ -35,5 +35,5 @@ x, y = gp_search.get_maximum(n_calls=10, n_random_starts=0,
                              verbose=True,
                              )
 
-x = gp_search.get_next_candidate(noise=0.01)
-print('NEXT CANDIDATE: ' + str(x))
+x = gp_search.get_next_candidate(n_points=5)
+print('NEXT CANDIDATES: ' + str(x))
