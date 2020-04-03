@@ -124,7 +124,27 @@ class GaussianProcessSearch:
             acq_func='EI'
         )
         optimizer.tell(self.x_values, y_values)
-        return optimizer.ask(n_points=n_points)
+        points = optimizer.ask(n_points=n_points)
+        return self._to_dict_list(points)
+
+    def _to_dict_list(self, points):
+        """Transform the list of points in a list of dictionaries {dimension_name: value}
+
+        Args:
+            points (list): List of lists of value, where for each list, the i-th element
+            corresponds to a value for the i-th dimension of the search space
+
+        Returns:
+            A list of dictionaries, where each dictionary has the search space dimensions as keys
+            and the correspondent value of points, in the self.search_space order
+
+        """
+        def to_dict(point):
+            d = {}
+            for i, dim in enumerate(self.search_space):
+                d[dim.name] = point[i]
+            return d
+        return [to_dict(p) for p in points]
 
     def init_session(self):
         """Save in session variables. the parameters that will be passed to the evaluation function
