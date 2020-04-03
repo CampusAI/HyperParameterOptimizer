@@ -207,7 +207,7 @@ class GaussianProcessSearch:
         res_dict['value'] = self.y_values
         return res_dict
 
-    def _save_values(self):
+    def save_values(self):
         """Save in the data file the known x_values and y_values
 
         """
