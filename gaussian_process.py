@@ -102,8 +102,29 @@ class GaussianProcessSearch:
         self.x_values = [[float(val) for val in point] for point in res.x_iters]
         self.y_values = [-val for val in res.func_vals]
         if self.output_file is not None:
-            self._save_values()
+            self.save_values()
         return res.x, -res.fun
+
+    def add_point_value(self, point, value):
+        """Add a point and the correspondent value to the knowledge.
+
+        Args:
+            point (Union[list, dict]): List of values correspondent to self.search_space
+                dimensions (in the same order), or dictionary {dimension_name: value} for all
+                the dimensions in self.search_space.
+            value (float): Value of the function at the given point
+
+        """
+        p = []
+        if isinstance(point, list):
+            p = point
+        elif isinstance(point, dict):
+            for dim in self.search_space:
+                p.append(point[dim.name])
+        else:
+            raise ValueError('Param point of add_point_value must be a list or a dictionary.')
+        self.x_values.append(p)
+        self.y_values.append(value)
 
     def get_next_candidate(self, n_points):
         """Returns the next candidates for the skopt acquisition function
@@ -207,7 +228,7 @@ class GaussianProcessSearch:
         res_dict['value'] = self.y_values
         return res_dict
 
-    def _save_values(self):
+    def save_values(self):
         """Save in the data file the known x_values and y_values
 
         """
