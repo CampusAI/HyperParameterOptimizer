@@ -144,9 +144,18 @@ class GaussianProcessSearch:
             n_initial_points=len(self.x_values),
             acq_func='EI'
         )
-        optimizer.tell(self.x_values, y_values)
+        optimizer.tell(self.x_values, y_values)  # TODO Does this fit the values???
         points = optimizer.ask(n_points=n_points)
         return self._to_dict_list(points)
+
+    def get_random_candidate(self, n_points):
+        candidates = []
+        for _ in range(n_points):
+            candidate = {}
+            for elem in self.search_space:
+                candidate[str(elem.name)] = elem.rvs(n_samples=1)[0]
+            candidates.append(candidate)
+        return candidates
 
     def _to_dict_list(self, points):
         """Transform the list of points in a list of dictionaries {dimension_name: value}
