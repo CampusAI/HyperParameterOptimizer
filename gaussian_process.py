@@ -3,9 +3,13 @@ from skopt.learning import GaussianProcessRegressor
 from skopt import Optimizer
 from skopt.learning.gaussian_process.kernels import ConstantKernel, Matern
 from skopt.plots import plot_objective, plot_evaluations
+from skopt import dump, load
+import time
 import matplotlib.pyplot as plt
 import load_save
 import sys
+import pathlib
+import numpy as np
 
 # Session variables
 session_params = {}
@@ -93,16 +97,28 @@ class GaussianProcessSearch:
                           y0=y_values,
                           noise=noise,
                           n_jobs=-1,
+                          callback=self.__save_res,
                           verbose=verbose)
         if plot_results:
             ax = plot_objective(res)
             plt.show()
             ax = plot_evaluations(res)
             plt.show()
+
         self.x_values = [[float(val) for val in point] for point in res.x_iters]
         self.y_values = [-val for val in res.func_vals]
         if self.output_file is not None:
             self.save_values()
+            try:
+                ax = plot_objective(res)
+                plt.savefig( self.output_file + "_plot.png")
+            except Exception as e:
+                print(e)
+            try:
+                ax = plot_evaluations(res)
+                plt.savefig( self.output_file + "_plot.png")
+            except Exception as e:
+                print(e)
         return res.x, -res.fun
 
     def add_point_value(self, point, value):
@@ -279,3 +295,13 @@ class GaussianProcessSearch:
         name_value_dict = GaussianProcessSearch._to_key_value(point)
         args = {**fixed_space, **name_value_dict}
         return -evaluator_func(**args)
+
+    def __save_res(self, res):
+        t = time.time()
+        pathlib.Path("gpro_results/").mkdir(parents=True, exist_ok=True)
+        result_name = "gpro_results/" + str(t) + "_gpro_result.pkl" 
+        dump(res, result_name)
+        numpy_name = "gpro_results/" + str(t) + "_gpro_res.npy" 
+        np.save(numpy_name, res.x)
+        numpy_name = "gpro_results/" + str(t) + "_gpro_fun.npy" 
+        np.save(numpy_name, -res.fun)
