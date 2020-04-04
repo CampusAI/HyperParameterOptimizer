@@ -111,12 +111,12 @@ class GaussianProcessSearch:
             self.save_values()
             try:
                 ax = plot_objective(res)
-                plt.savefig( self.output_file + "_plot.png")
+                plt.savefig( self.output_file + "_objective_plot.png")
             except Exception as e:
                 print(e)
             try:
                 ax = plot_evaluations(res)
-                plt.savefig( self.output_file + "_plot.png")
+                plt.savefig( self.output_file + "_evaluations_plot.png")
             except Exception as e:
                 print(e)
         return res.x, -res.fun
