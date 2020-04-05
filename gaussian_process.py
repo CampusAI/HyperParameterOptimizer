@@ -298,7 +298,7 @@ class GaussianProcessSearch:
         return -evaluator_func(**args)
 
     def __save_res(self, res):
-        self.solutions.Add([res.x, res.fun])
+        self.solutions.append([res.x, res.fun])
         pathlib.Path("gpro_results/").mkdir(parents=True, exist_ok=True)
         numpy_name = "gpro_results/gpro_points.npy" 
         np.save(numpy_name, self.solutions)
