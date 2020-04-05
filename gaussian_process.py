@@ -39,6 +39,7 @@ class GaussianProcessSearch:
         self.output_file = output_file
         self.x_values = []
         self.y_values = []
+        self.solutions = []
         if input_file is not None:
             try:
                 data_dict = load_save.load(data_file=input_file)
@@ -297,11 +298,7 @@ class GaussianProcessSearch:
         return -evaluator_func(**args)
 
     def __save_res(self, res):
-        t = time.time()
+        self.solutions.Add([res.x, res.fun])
         pathlib.Path("gpro_results/").mkdir(parents=True, exist_ok=True)
-        result_name = "gpro_results/" + str(t) + "_gpro_result.pkl" 
-        dump(res, result_name)
-        numpy_name = "gpro_results/" + str(t) + "_gpro_res.npy" 
-        np.save(numpy_name, res.x)
-        numpy_name = "gpro_results/" + str(t) + "_gpro_fun.npy" 
-        np.save(numpy_name, -res.fun)
+        numpy_name = "gpro_results/gpro_points.npy" 
+        np.save(numpy_name, self.solutions)
