@@ -1,15 +1,19 @@
+import os
+import pathlib
+import sys
+import time
+
+import matplotlib.pyplot as plt
+import numpy as np
 from skopt import gp_minimize
 from skopt.learning import GaussianProcessRegressor
 from skopt import Optimizer
 from skopt.learning.gaussian_process.kernels import ConstantKernel, Matern
 from skopt.plots import plot_objective, plot_evaluations
 from skopt import dump, load
-import time
-import matplotlib.pyplot as plt
-import load_save
-import sys
-import pathlib
-import numpy as np
+
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from load_save import *
 
 # Session variables
 session_params = {}
