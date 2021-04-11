@@ -306,3 +306,17 @@ class GaussianProcessSearch:
         pathlib.Path("gpro_results/").mkdir(parents=True, exist_ok=True)
         numpy_name = "gpro_results/gpro_points.npy" 
         np.save(numpy_name, self.solutions)
+        self.save_checkpoint(res)
+
+    def save_checkpoint(self, res):
+        x_values = [[float(val) for val in point] for point in res.x_iters]
+        y_values = [-val for val in res.func_vals]
+
+        res_dict = {}
+        for i, dimension in enumerate(self.search_space):
+            res_dict[dimension.name] = []
+            for point in x_values:
+                res_dict[dimension.name].append(point[i])
+        res_dict['value'] = y_values
+
+        load_save.save(self.output_file, res_dict)
