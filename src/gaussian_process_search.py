@@ -12,8 +12,8 @@ from skopt.learning.gaussian_process.kernels import ConstantKernel, Matern
 from skopt.plots import plot_objective, plot_evaluations
 from skopt import dump, load
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-import load_save
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import utilities.io
 
 # Session variables
 session_params = {}
@@ -46,7 +46,7 @@ class GaussianProcessSearch:
         self.solutions = []
         if input_file is not None:
             try:
-                data_dict = load_save.load(data_file=input_file)
+                data_dict = utilities.io.load(data_file=input_file)
                 self.x_values, self.y_values = self._extract_values(data_dict)
             except OSError as e:
                 raise OSError('Cannot read input file. \n' + str(e))
@@ -162,10 +162,16 @@ class GaussianProcessSearch:
         optimizer = Optimizer(
             dimensions=self.search_space,
             base_estimator='gp',
-            n_initial_points=len(self.x_values),
-            acq_func='EI'
+            # n_initial_points=len(self.x_values),
+            acq_func='EI',
+            n_jobs=-1
         )
-        optimizer.tell(self.x_values, y_values)  # TODO Does this fit the values???
+        # x_values = np.array(self.x_values)
+        x_values = self.x_values
+        y_values = y_values
+        print("x:", x_values)
+        print("y:", y_values)
+        optimizer.tell(x_values, y_values, fit=True)
         points = optimizer.ask(n_points=n_points)
         return self._to_dict_list(points)
 
@@ -263,7 +269,7 @@ class GaussianProcessSearch:
 
         """
         data_dict = self._pack_values()
-        load_save.save(self.output_file, data_dict)
+        utilities.io.save(self.output_file, data_dict)
 
     @staticmethod
     def _to_key_value(values):
@@ -319,4 +325,4 @@ class GaussianProcessSearch:
                 res_dict[dimension.name].append(point[i])
         res_dict['value'] = y_values
 
-        load_save.save(self.output_file, res_dict)
+        utilities.io.save(self.output_file, res_dict)
