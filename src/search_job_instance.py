@@ -8,9 +8,12 @@ class SearchJobInstance(ABC):
         self.id = id
 
     @abstractmethod
-    def launch(self, **kwargs) -> None:
+    def launch(self, **kwargs) -> int:
         """Execute command given the objective arguments
            IMPORTANT: Must be non-blocking!
+
+           Returns:
+            status(Int): 0 everything is ok, 1 there was some error
         """
         self.passed_args = kwargs
         raise NotImplementedError

@@ -12,6 +12,16 @@ class ParallelSearcher:
         self.optimizer = optimizer
         self.job_class = job_class
 
+    def __launch(self, instance, candidate, retrials=5):
+        launch_status = 1
+        attempt = 0
+        while launch_status != 0 and attempt < retrials:
+            launch_status = instance.launch(**candidate)
+            if launch_status != 0:
+                print("There was some error launching the instance. Retrying (" + str(attempt) + "/" + retrials + ")")
+                time.sleep(0.1)
+                attempt += 1
+
     def optimize(self,
                  n_calls=10,
                  n_random_starts=5,
@@ -35,7 +45,7 @@ class ParallelSearcher:
         # Launch all instances
         for i in range(n_parallel_jobs):
             print(candidates[i])
-            instances[i].launch(**candidates[i])
+            self.__launch(instance=instances[i], candidate=candidates[i])
             n_calls -= 1
 
         while n_calls > 0:
@@ -62,6 +72,7 @@ class ParallelSearcher:
                     candidate = self.optimizer.get_next_candidate(1)[0]
                     instances[i] = self.job_class(instance.id + n_parallel_jobs)
                     instances[i].launch(**candidate)
+                    self.__launch(instance=instances[i], candidate=candidate)
 
                     # Display information
                     print("*****")
