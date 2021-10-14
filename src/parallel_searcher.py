@@ -71,7 +71,6 @@ class ParallelSearcher:
                     # Instantiate new job instance
                     candidate = self.optimizer.get_next_candidate(1)[0]
                     instances[i] = self.job_class(instance.id + n_parallel_jobs)
-                    instances[i].launch(**candidate)
                     self.__launch(instance=instances[i], candidate=candidate)
 
                     # Display information
