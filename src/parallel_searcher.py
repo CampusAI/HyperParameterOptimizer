@@ -36,12 +36,14 @@ class ParallelSearcher:
         for i in range(n_parallel_jobs):
             print(candidates[i])
             instances[i].launch(**candidates[i])
+            n_calls -= 1
 
-        while(True):
+        while n_calls > 0:
             time.sleep(refresh_rate)  # refresh rate in seconds
             for i in range(n_parallel_jobs):
                 instance = instances[i]
                 if instance.done():
+                    n_calls -= 1
                     instance_params = instance.passed_args
                     instance_result = instance.get_result()
 
