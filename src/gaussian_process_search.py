@@ -147,7 +147,7 @@ class GaussianProcessSearch:
         self.x_values.append(p)
         self.y_values.append(value)
 
-    def get_next_candidate(self, n_points):
+    def get_next_candidate(self, n_points, n_initial_points=None):
         """Returns the next candidates for the skopt acquisition function
 
         Args:
@@ -162,7 +162,8 @@ class GaussianProcessSearch:
         optimizer = Optimizer(
             dimensions=self.search_space,
             base_estimator='gp',
-            # n_initial_points=len(self.x_values),
+            n_initial_points=n_initial_points,
+            initial_point_generator="random",
             acq_func='EI',
             n_jobs=-1
         )
