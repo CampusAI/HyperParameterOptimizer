@@ -170,8 +170,6 @@ class GaussianProcessSearch:
         # x_values = np.array(self.x_values)
         x_values = self.x_values
         y_values = y_values
-        print("x:", x_values)
-        print("y:", y_values)
         optimizer.tell(x_values, y_values, fit=True)
         points = optimizer.ask(n_points=n_points)
         return self._to_dict_list(points)
